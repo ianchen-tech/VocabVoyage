@@ -1,0 +1,17 @@
+// Vocabulary Learning Workflow
+digraph {
+	rankdir=TB
+	START [label=Start]
+	agent [label="Agent
+(Decision Making)"]
+	tools [label="Tools
+(Search/Category/Quiz)"]
+	generate [label="Generate Response"]
+	END [label=End]
+	START -> agent
+	agent -> tools [label="needs tools"]
+	agent -> generate [label="direct response"]
+	tools -> tools [label="needs more tools"]
+	tools -> generate [label=complete]
+	generate -> END
+}

@@ -1,0 +1,151 @@
+Topic: Food & Dining
+1. appetizer - 開胃菜
+2. entree - 主菜
+3. dessert - 甜點
+4. beverage - 飲料
+5. menu - 菜單
+6. order (v.) - 點餐
+7. reservation - 預訂
+8. dine in - 堂食
+9. take out - 外帶
+10. delivery - 外送
+11. bill - 帳單
+12. tip - 小費
+13. waiter/waitress - 服務員
+14. chef - 廚師
+15. cuisine - 菜餚
+16. recipe - 食譜
+17. ingredient - 食材
+18. spice - 香料
+19. seasoning - 調味料
+20. garnish - 裝飾
+21. flavor - 風味
+22. aroma - 香氣
+23. texture - 口感
+24. palatable - 美味的
+25. bland - 清淡的
+26. savory - 鹹香的
+27. spicy - 辣的
+28. sour - 酸的
+29. bitter - 苦的
+30. sweet - 甜的
+31. salty - 鹹的
+32. crunchy - 脆的
+33. creamy - 奶油般的
+34. chewy - 有嚼勁的
+35. juicy - 多汁的
+36. tender - 軟嫩的
+37. overcooked - 煮過頭的
+38. undercooked - 未煮熟的
+39. raw - 生的
+40. grilled - 烤的
+41. fried - 炸的
+42. steamed - 蒸的
+43. boiled - 煮的
+44. baked - 烘烤的
+45. roasted - 烘烤的
+46. simmer - 燉煮
+47. saute - 翻炒
+48. chop - 切碎
+49. dice - 切丁
+50. slice - 切片
+51. grate - 磨碎
+52. blend - 混合
+53. whisk - 攪拌
+54. knead - 揉捏
+55. marinate - 醃製
+56. plate - 裝盤
+57. serve - 上菜
+58. portion - 分量
+59. leftover - 剩菜
+60. buffet - 自助餐
+61. banquet - 宴會
+62. brunch - 早午餐
+63. supper - 晚餐
+64. snack - 零食
+65. feast - 盛宴
+66. picky eater - 挑食的人
+67. foodie - 美食家
+68. gourmet - 美食
+69. culinary - 烹飪的
+70. delectable - 美味的
+71. mouthwatering - 令人垂涎的
+72. appetizing - 開胃的
+73. aromatic - 芳香的
+74. succulent - 鮮美的
+75. exquisite - 精緻的
+76. authentic - 正宗的
+77. exotic - 異國情調的
+78. traditional - 傳統的
+79. contemporary - 現代的
+80. fusion - 融合
+81. vegetarian - 素食者
+82. vegan - 純素食者
+83. gluten-free - 無麩質的
+84. dairy-free - 無乳製品的
+85. organic - 有機的
+86. locally sourced - 當地採購的
+87. farm-to-table - 從農場到餐桌的
+88. sustainable seafood - 可持續海鮮
+89. fair trade coffee - 公平貿易咖啡
+90. free-range chicken - 放養雞
+91. grass-fed beef - 草飼牛肉
+92. full-bodied - 口感醇厚的
+93. light-bodied - 口感清淡的
+94. refreshing - 清爽的
+95. thirst-quenching - 解渴的
+96. decadent - 令人沉溺的
+97. indulgent - 令人享受的
+98. heartwarming - 暖心的
+99. comforting - 慰藉的
+100. nostalgic - 懷舊的
+101. family-style - 家庭式的
+102. fine dining - 高級餐廳
+103. casual dining - 休閒餐廳
+104. fast food - 快餐
+105. street food - 街頭小吃
+106. takeout container - 外帶餐盒
+107. disposable cutlery - 一次性餐具
+108. biodegradable packaging - 可生物降解包裝
+109. food waste - 食物浪費
+110. leftovers - 剩饭剩菜
+111. doggy bag - 打包袋
+112. to go box - 外帶盒
+113. prix fixe menu - 固定價格菜單
+114. a la carte - 單點
+115. course - 菜餚 (一道菜)
+116. amuse-bouche - 開胃小點
+117. palate cleanser - 清口菜
+118. wine pairing - 佐餐酒
+119. sommelier - 品酒師
+120. barista - 咖啡師
+121. mixologist - 調酒師
+122. food critic - 美食評論家
+123. food blogger - 美食博主
+124. culinary arts - 烹飪藝術
+125. gastronomy - 美食學
+126. Michelin star - 米其林星級
+127. Zagat rating - 扎加特評級
+128. ambiance - 氣氛
+129. decor - 裝潢
+130. tablecloth - 桌布
+131. napkin - 餐巾
+132. silverware - 銀器
+133. chopsticks - 筷子
+134. to clear the table - 收拾桌子
+135. to set the table - 摆放餐具
+136. to split the bill - 分攤帳單
+137. to treat someone to dinner - 請客吃飯
+138. to grab a bite to eat - 随便吃点东西
+139. to work up an appetite - 做运动以增加食欲
+140. to wine and dine - 用美酒佳餚款待
+141. to have a sweet tooth - 愛吃甜食
+142. to be a picky eater - 挑食
+143. to bolt down one's food - 狼吞虎嚥
+144. to savor every bite - 細細品尝每一口
+145. to have a craving for - 渴望
+146. to overeat - 吃太多
+147. to pig out - 大吃特吃
+148. to indulge in - 尽情享用
+149. to make your mouth water - 令人垂涎三尺
+150. bon appetit - 祝您好胃口

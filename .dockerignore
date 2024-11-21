@@ -1,0 +1,9 @@
+notebook/
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+.env
+.git/
+.gitignore
+README.md
