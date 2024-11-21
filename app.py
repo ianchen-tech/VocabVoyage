@@ -62,7 +62,7 @@ db = VocabDatabase()
 
 st.set_page_config(
     page_title="VocabVoyage - 英文學習助手",
-    page_icon="🚀",
+    page_icon="🎓",
     layout="wide"
 )
 
