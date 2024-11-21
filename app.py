@@ -61,7 +61,7 @@ def parse_vocab_response(response: str) -> dict:
 db = VocabDatabase()
 
 st.set_page_config(
-    page_title="VocabVoyage - 英文學習助手",
+    page_title="VocabVoyage",
     page_icon="🎓",
     layout="wide"
 )
@@ -103,7 +103,7 @@ else:
 
     # 主要功能區域
     if app_mode == "聊天學習":
-        st.title("英文單字學習助手")
+        st.title("英文學習助手")
         
         # 初始化聊天歷史
         if "messages" not in st.session_state:
