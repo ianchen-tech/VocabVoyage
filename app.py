@@ -37,8 +37,8 @@ def parse_vocab_response(response: str) -> dict:
                     vocab_info["definition"] = line.replace("定義：", "").strip()
                 elif line.startswith("相關詞彙："):
                     vocab_info["related_words"] = line.replace("相關詞彙：", "").strip()
-                elif line.startswith("實用建議："):
-                    vocab_info["tips"] = line.replace("實用建議：", "").strip()
+                elif line.startswith("使用建議："):
+                    vocab_info["tips"] = line.replace("使用建議：", "").strip()
                 elif line.startswith("-> "):
                     example = line.replace("-> ", "").strip()
                     vocab_info["examples"].append(example)
@@ -150,7 +150,7 @@ else:
                                 st.markdown(f"**相關詞彙:** {parsed_response['related_words']}")
                                 
                             if parsed_response['tips']:
-                                st.markdown(f"**實用建議:** {parsed_response['tips']}")
+                                st.markdown(f"**使用建議:** {parsed_response['tips']}")
                         else:
                             st.markdown(message["content"])
                     else:
@@ -183,9 +183,9 @@ else:
                                     word=parsed_response['word'],
                                     definition=parsed_response['definition'],
                                     examples=parsed_response['examples'] if parsed_response['examples'] else [],
-                                    notes=f"詞性: {parsed_response['part_of_speech'] or ''}\n" +
-                                        f"相關詞彙: {parsed_response['related_words'] or ''}\n" +
-                                        f"實用建議: {parsed_response['tips'] or ''}"
+                                    notes=f"`詞性: {parsed_response['part_of_speech'] or ''}`\n" +
+                                        f"`相關詞彙: {parsed_response['related_words'] or ''}`\n" +
+                                        f"`使用建議: {parsed_response['tips'] or ''}`"
                                 )
                                 st.success(f"已將 '{parsed_response['word']}' 加入你的單字本！")
                             except ValueError as ve:
@@ -208,7 +208,7 @@ else:
                                 st.markdown(f"**相關詞彙:** {parsed_response['related_words']}")
                                 
                             if parsed_response['tips']:
-                                st.markdown(f"**實用建議:** {parsed_response['tips']}")
+                                st.markdown(f"**使用建議:** {parsed_response['tips']}")
 
                         else:
                             # 直接顯示非結構化的回應內容
