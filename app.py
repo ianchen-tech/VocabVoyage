@@ -2,6 +2,7 @@ import streamlit as st
 from graph import process_vocab_query, generate_workflow_graph
 from models import VocabDatabase
 from dotenv import load_dotenv
+import uuid
 
 load_dotenv()
 
@@ -87,7 +88,7 @@ if not st.session_state.username:
 else:
     # 側邊欄導航
     with st.sidebar:
-        st.title(f"👋 {st.session_state.username}")
+        st.title(f"Hi! {st.session_state.username}~ 👋")
         app_mode = st.selectbox(
             "選擇功能",
             ["聊天學習", "我的單字本", "使用指南", "系統架構"]
@@ -99,16 +100,114 @@ else:
             st.session_state.user_id = None
             if "messages" in st.session_state:
                 del st.session_state.messages
+            if "current_chat_id" in st.session_state:
+                del st.session_state.current_chat_id
             st.rerun()
 
     # 主要功能區域
     if app_mode == "聊天學習":
         st.title("英文學習助手")
         
-        # 初始化聊天歷史
-        if "messages" not in st.session_state:
-            st.session_state.messages = []
-            welcome_msg = """👋 歡迎使用 VocabVoyage！
+        # 初始化聊天管理
+        if "current_chat_id" not in st.session_state:
+            # 獲取用戶的聊天列表
+            user_chats = db.get_user_chats(st.session_state.user_id)
+            if not user_chats:
+                # 如果用戶沒有聊天記錄，創建第一個聊天
+                chat_id = str(uuid.uuid4())  # 使用 UUID 生成唯一ID
+                db.create_chat_session(st.session_state.user_id, "聊天 1", chat_id)
+                st.session_state.current_chat_id = chat_id
+            else:
+                # 使用最新的聊天作為當前聊天
+                st.session_state.current_chat_id = user_chats[0]["id"]
+            
+        # 在側邊欄添加聊天管理
+        with st.sidebar:
+            # 加入空白間距
+            st.markdown("----", unsafe_allow_html=True)
+
+            # 聊天管理
+            st.markdown("### 聊天管理")
+            
+            # 獲取用戶的所有聊天
+            user_chats = db.get_user_chats(st.session_state.user_id)
+            
+            # 下拉式選單選擇聊天
+            chat_options = {chat["id"]: chat["name"] for chat in user_chats}
+            chat_ids = list(chat_options.keys())
+            try:
+                current_index = chat_ids.index(st.session_state.current_chat_id)
+            except ValueError:
+                current_index = 0
+                if chat_ids:
+                    st.session_state.current_chat_id = chat_ids[0]
+            
+            if chat_ids:  # 確保有聊天可選
+                selected_chat = st.selectbox(
+                    "切換聊天",
+                    options=chat_ids,
+                    format_func=lambda x: chat_options[x],
+                    key="chat_selector",
+                    index=current_index
+                )
+                
+                # 編輯聊天名稱
+                current_chat_name = next((chat["name"] for chat in user_chats if chat["id"] == selected_chat), "")
+                new_chat_name = st.text_input(
+                    "修改聊天名稱",
+                    value=current_chat_name,
+                    key=f"edit_name_{selected_chat}"
+                )
+
+                # 如果名稱有變更，更新數據庫
+                if new_chat_name != current_chat_name:
+                    if db.update_chat_name(selected_chat, new_chat_name):
+                        st.rerun()
+            
+            # 新增和刪除按鈕並排
+            button_container = st.container()
+            with button_container:
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("➕", key="new_chat_button", help="新增聊天"):
+                        # 創建新的聊天會話
+                        chat_count = len(user_chats)
+                        new_chat_name = f"聊天 {chat_count + 1}"
+                        new_chat_id = str(uuid.uuid4())  # 使用 UUID 生成唯一ID
+                        db.create_chat_session(st.session_state.user_id, new_chat_name, new_chat_id)
+                        st.session_state.current_chat_id = new_chat_id
+                        st.rerun()
+                
+                with col2:
+                    if st.button("🗑️", key="delete_chat_button", help="刪除目前的聊天"):
+                        if db.delete_chat_session(selected_chat):
+                            # 如果刪除成功，更新當前聊天ID
+                            remaining_chats = db.get_user_chats(st.session_state.user_id)
+                            if remaining_chats:
+                                st.session_state.current_chat_id = remaining_chats[0]["id"]
+                            else:
+                                # 如果沒有剩餘的聊天，創建一個新的
+                                new_chat_id = str(uuid.uuid4())  # 生成新的 UUID
+                                db.create_chat_session(st.session_state.user_id, "聊天 1", new_chat_id)
+                                st.session_state.current_chat_id = new_chat_id
+                            
+                            # 清除相關的 session state 以確保頁面完全重新載入
+                            if "chat_selector" in st.session_state:
+                                del st.session_state.chat_selector
+                            
+                            st.rerun()
+
+        # 更新當前聊天
+        if "selected_chat" in locals() and selected_chat != st.session_state.current_chat_id:
+            st.session_state.current_chat_id = selected_chat
+            st.rerun()
+        
+        # 獲取當前聊天的消息
+        current_chat_messages = db.get_chat_messages(st.session_state.current_chat_id)
+        
+        # 如果是新聊天，顯示歡迎消息
+        if not current_chat_messages:
+            welcome_msg = """歡迎使用 VocabVoyage！
 
 你可以：
 1. 📖 查詢單字的詳細用法
@@ -127,15 +226,16 @@ else:
    - "幫我寫一篇關於冒險的英文故事"
    - "幫我潤飾這段英文文章"
 """
-            st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
+            db.add_chat_message(st.session_state.current_chat_id, "assistant", welcome_msg)
+            current_chat_messages = db.get_chat_messages(st.session_state.current_chat_id)
 
         # 顯示聊天歷史
         messages_container = st.container()
         with messages_container:
-            for message in st.session_state.messages:
+            for message in current_chat_messages:
                 with st.chat_message(message["role"]):
                     # 檢查是否為結構化單字資訊
-                    if isinstance(message.get("content"), str) and "單字：" in message["content"] and "定義：" in message["content"]:
+                    if isinstance(message["content"], str) and "單字：" in message["content"] and "定義：" in message["content"]:
                         parsed_response = parse_vocab_response(message["content"])
                         if parsed_response["is_word"]:
                             st.markdown(f"### 📝 {parsed_response['word']}")
@@ -160,13 +260,19 @@ else:
 
         # 用戶輸入
         if prompt := st.chat_input("輸入你的問題..."):
-            # 添加用戶ID到查詢中
+            # 生成 thread_id
+            current_thread_id = f"{st.session_state.user_id}_{st.session_state.current_chat_id}"
+            
+            # 添加用戶ID和thread_id到查詢中
             user_query = {
                 "messages": [{"role": "user", "content": prompt}],
-                "user_id": st.session_state.user_id
+                "user_id": st.session_state.user_id,
+                "thread_id": current_thread_id
             }
             
-            st.session_state.messages.append({"role": "user", "content": prompt})
+            # 保存用戶消息
+            db.add_chat_message(st.session_state.current_chat_id, "user", prompt)
+            
             with st.chat_message("user"):
                 st.markdown(prompt)
 
@@ -219,7 +325,8 @@ else:
                     except Exception as e:
                         st.error(f"發生錯誤：{str(e)}")
                         
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            # 保存助手回應
+            db.add_chat_message(st.session_state.current_chat_id, "assistant", response)
 
     elif app_mode == "我的單字本":
         st.title("📖 我的單字本")

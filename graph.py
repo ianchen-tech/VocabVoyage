@@ -5,12 +5,16 @@ from langchain.tools import Tool
 from langchain_core.prompts import PromptTemplate
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage
 from langchain_core.output_parsers import StrOutputParser
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 import graphviz
 import pprint
+
+# 創建記憶保存器
+memory = MemorySaver()
 
 # 定義狀態類型
 class VocabState(TypedDict):
@@ -158,8 +162,9 @@ def agent(state: VocabState):
 
     system_message = """你是一個英語學習助手的路由器。
 你的唯一任務是決定是否使用提供的工具來回答用戶的問題。
-- 如果問題可以用工具回答，請使用適當的工具
+- 如果問題需要用工具回答，請使用適當的工具
 - 如果問題不需要工具（比如一般英語學習建議或非英語相關問題），請回覆 "DIRECT_RESPONSE"
+- 注意不要輕易的使用category_vocabulary_list跟vocabulary_quiz_generator這兩個工具，要確定你真的必須使用它們再使用
 不要直接回答用戶的問題，只需決定使用工具或返回標記。"""
     messages = [HumanMessage(content=system_message)] + messages
 
@@ -188,12 +193,25 @@ def generate_response(state: VocabState):
     
     # 處理其他情況
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+
+    # 將聊天歷史轉換為格式化的字符串
+    chat_history = []
+    for msg in messages[:-2]:  # 除了最新消息外的所有歷史
+        role = "用戶" if isinstance(msg, HumanMessage) else "助手"
+        chat_history.append(f"{role}: {msg.content}")
+    formatted_history = "\n".join(chat_history)
+    
+    current_question = messages[-2].content  # 最新的問題
+
     prompt = PromptTemplate(
-        template=SYSTEM_PROMPTS["other"] + "\n\n用戶輸入: {query}",
-        input_variables=["query"]
+        template=SYSTEM_PROMPTS["other"] + "\n\n=== 聊天歷史 ===\n{chat_history}\n\n=== 最新問題 ===\n{query}",
+        input_variables=["chat_history", "query"]
     )
     chain = prompt | llm | StrOutputParser()
-    response = chain.invoke({"query": messages[0].content})
+    response = chain.invoke({
+        "chat_history": formatted_history,
+        "query": current_question
+    })
     
     return {
         "messages": [AIMessage(content=response)],
@@ -279,8 +297,9 @@ tools = [
     Tool(
         name="category_vocabulary_list",
         description="""
-用於獲取特定主題或領域的相關英文單字列表。適用情況：
-1. 想學習特定領域的專業詞彙
+用於獲取特定主題或領域的相關英文單字列表(只問或只需要一個單字則不會用到)。
+適用情況：
+1. 想學習特定領域的多個專業詞彙
 2. 需要某個主題的相關單字
 3. 想擴充特定場景的詞彙量
 支援的類別包括但不限於：
@@ -301,7 +320,8 @@ tools = [
     Tool(
         name="vocabulary_quiz_generator",
         description="""
-用於生成特定主題的英文單字測驗。適用情況：
+用於生成特定主題的英文單字測驗(只問或只需要一個單字則不會用到)。
+適用情況：
 1. 想測試特定領域的詞彙掌握程度
 2. 需要練習題進行自我評估
 3. 想以測驗方式學習新單字
@@ -342,28 +362,41 @@ def create_vocab_chain():
         }
     )
     
-    # 工具節點的條件邊
-    workflow.add_conditional_edges(
-        "tools",
-        tools_condition,
-        {
-            "tools": "tools",
-            END: "generate",
-        }
-    )
+    # 工具節點到生成節點
+    workflow.add_edge("tools", "generate")
     
     workflow.add_edge("generate", END)
 
-    return workflow.compile()
+    # 編譯時加入 checkpointer
+    return workflow.compile(checkpointer=memory)
 
 def process_vocab_query(query_data: dict):
     """處理查詢請求"""
     app = create_vocab_chain()
-    for output in app.stream({
+
+    # 創建配置，包含線程ID
+    config = {"configurable": {"thread_id": query_data["thread_id"]}}
+
+    input_data = {
         "messages": query_data["messages"],
         "context": {},
         "user_id": query_data["user_id"]
-    }):
+    }
+
+    # 檢查現有狀態
+    current_state = app.get_state(config)
+
+    # 檢查狀態是否包含之前的消息
+    if current_state and current_state.values.get("messages"):
+        print(f"Found existing messages for user {query_data['user_id']}")
+        # 將新消息添加到現有消息列表中
+        existing_messages = current_state.values["messages"]
+        input_data["messages"] = existing_messages + input_data["messages"]
+    else:
+        print(f"Starting new conversation for user {query_data['user_id']}")
+
+    # 使用準備好的輸入數據調用 stream
+    for output in app.stream(input_data, config=config):
         for key, value in output.items():
             # if "messages" in value:
             #     value["messages"][-1].pretty_print()
@@ -371,6 +404,16 @@ def process_vocab_query(query_data: dict):
             print()
     
     return value['messages'][-1].content
+
+def get_conversation_history(thread_id: str):
+    """獲取用戶的對話歷史"""
+    app = create_vocab_chain()
+    config = {"configurable": {"thread_id": thread_id}}
+    try:
+        state = app.get_state(config)
+        return state.values["messages"]
+    except:
+        return []
 
 def generate_workflow_graph():
     """生成工作流程圖"""
@@ -388,7 +431,6 @@ def generate_workflow_graph():
     dot.edge('START', 'agent')
     dot.edge('agent', 'tools', 'needs tools')
     dot.edge('agent', 'generate', 'direct response')
-    dot.edge('tools', 'tools', 'needs more tools')
     dot.edge('tools', 'generate', 'complete')
     dot.edge('generate', 'END')
     
@@ -404,13 +446,13 @@ if __name__ == "__main__":
         #         "user_id": "test_user_1"
         #     }
         # },
-        {
-            "name": "Category Search",
-            "query": {
-                "messages": [HumanMessage(content="想了解商業相關單字")],
-                "user_id": "test_user_1"
-            }
-        },
+        # {
+        #     "name": "Category Search",
+        #     "query": {
+        #         "messages": [HumanMessage(content="想了解商業相關單字")],
+        #         "user_id": "test_user_1"
+        #     }
+        # },
         # {
         #     "name": "Quiz Generation",
         #     "query": {
@@ -432,8 +474,31 @@ if __name__ == "__main__":
         #         "user_id": "test_user_1"
         #     }
         # }
+        {
+            "name": "General Conversation",
+            "query": {
+                "messages": [HumanMessage(content="給我一個高深的單字，一個就好")],
+                "user_id": "test_user_1",
+                "thread_id": "thread_1"
+            }
+        },
+        {
+            "name": "Follow-up Question", 
+            "query": {
+                "messages": [HumanMessage(content="針對這個單字給我一個例句")],
+                "user_id": "test_user_1",
+                "thread_id": "thread_1"
+            }
+        }
     ]
 
     for test in test_cases:
         print(f"\n=== Test Case: {test['name']} ===")
-        process_vocab_query(test["query"])
+        response = process_vocab_query(test["query"])
+        print("\nResponse:", response)
+        
+        # 顯示對話歷史
+        print("\nConversation History:")
+        history = get_conversation_history('thread_1')
+        for msg in history:
+            print(f"- {msg.type}: {msg.content[:100]}...")
