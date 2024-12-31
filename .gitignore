@@ -21,3 +21,6 @@ venv/
 
 # sqlite
 *.db
+
+# Firebase
+FirebaseKey.json

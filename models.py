@@ -12,8 +12,11 @@ class VocabDatabase:
     def __init__(self):
         # 初始化 Firebase
         if not firebase_admin._apps:
-            # 使用環境變數獲得金鑰
-            cred = credentials.Certificate(json.loads(os.getenv('FIREBASE_CREDENTIALS')))
+            # 使用環境變數或服務帳戶金鑰檔案
+            if os.getenv('FIREBASE_CREDENTIALS'):
+                cred = credentials.Certificate(json.loads(os.getenv('FIREBASE_CREDENTIALS')))
+            else:
+                cred = credentials.Certificate('FirebaseKey.json')
                 
             firebase_admin.initialize_app(cred, {
                 'databaseURL': os.getenv('FIREBASE_DATABASE_URL')
