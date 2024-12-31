@@ -260,14 +260,12 @@ else:
 
         # 用戶輸入
         if prompt := st.chat_input("輸入你的問題..."):
-            # 生成 thread_id
-            current_thread_id = f"{st.session_state.user_id}_{st.session_state.current_chat_id}"
             
             # 添加用戶ID和thread_id到查詢中
             user_query = {
                 "messages": [{"role": "user", "content": prompt}],
                 "user_id": st.session_state.user_id,
-                "thread_id": current_thread_id
+                "thread_id": st.session_state.current_chat_id
             }
             
             # 保存用戶消息

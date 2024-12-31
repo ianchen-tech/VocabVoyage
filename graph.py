@@ -12,9 +12,35 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 import graphviz
 import pprint
+from models import VocabDatabase
 
-# 創建記憶保存器
-memory = MemorySaver()
+# 初始化資料庫
+db = VocabDatabase()
+
+def get_recent_chat_history(chat_id: str) -> list[BaseMessage]:
+    """從資料庫獲取最近的聊天記錄"""
+    messages = db.get_chat_messages(chat_id)
+    if not messages:
+        return []
+    
+    # 只取最近的兩輪對話（2個user和2個assistant）
+    recent_messages = []
+    user_count = 0
+    assistant_count = 0
+    
+    # 從最新的消息開始往前遍歷
+    for msg in reversed(messages):
+        if msg["role"] == "user" and user_count < 2:
+            recent_messages.insert(0, HumanMessage(content=msg["content"]))
+            user_count += 1
+        elif msg["role"] == "assistant" and assistant_count < 2:
+            recent_messages.insert(0, AIMessage(content=msg["content"]))
+            assistant_count += 1
+            
+        if user_count >= 2 and assistant_count >= 2:
+            break
+            
+    return recent_messages
 
 # 定義狀態類型
 class VocabState(TypedDict):
@@ -368,35 +394,27 @@ def create_vocab_chain():
     workflow.add_edge("generate", END)
 
     # 編譯時加入 checkpointer
-    return workflow.compile(checkpointer=memory)
+    return workflow.compile()
 
 def process_vocab_query(query_data: dict):
     """處理查詢請求"""
     app = create_vocab_chain()
+    chat_id = query_data["thread_id"]
 
-    # 創建配置，包含線程ID
-    config = {"configurable": {"thread_id": query_data["thread_id"]}}
+    # 獲取最近的聊天記錄
+    previous_messages = get_recent_chat_history(chat_id)
+    
+    # 將新消息添加到歷史記錄中
+    input_messages = previous_messages + query_data["messages"]
 
     input_data = {
-        "messages": query_data["messages"],
+        "messages": input_messages,
         "context": {},
         "user_id": query_data["user_id"]
     }
 
-    # 檢查現有狀態
-    current_state = app.get_state(config)
-
-    # 檢查狀態是否包含之前的消息
-    if current_state and current_state.values.get("messages"):
-        print(f"Found existing messages for user {query_data['user_id']}")
-        # 將新消息添加到現有消息列表中
-        existing_messages = current_state.values["messages"]
-        input_data["messages"] = existing_messages + input_data["messages"]
-    else:
-        print(f"Starting new conversation for user {query_data['user_id']}")
-
     # 使用準備好的輸入數據調用 stream
-    for output in app.stream(input_data, config=config):
+    for output in app.stream(input_data):
         for key, value in output.items():
             # if "messages" in value:
             #     value["messages"][-1].pretty_print()
@@ -404,16 +422,6 @@ def process_vocab_query(query_data: dict):
             print()
     
     return value['messages'][-1].content
-
-def get_conversation_history(thread_id: str):
-    """獲取用戶的對話歷史"""
-    app = create_vocab_chain()
-    config = {"configurable": {"thread_id": thread_id}}
-    try:
-        state = app.get_state(config)
-        return state.values["messages"]
-    except:
-        return []
 
 def generate_workflow_graph():
     """生成工作流程圖"""
@@ -478,16 +486,16 @@ if __name__ == "__main__":
             "name": "General Conversation",
             "query": {
                 "messages": [HumanMessage(content="給我一個高深的單字，一個就好")],
-                "user_id": "test_user_1",
-                "thread_id": "thread_1"
+                "user_id": "test",
+                "thread_id": "3dc6d9cd-95ef-44fc-aa30-935f6592c648"
             }
         },
         {
             "name": "Follow-up Question", 
             "query": {
                 "messages": [HumanMessage(content="針對這個單字給我一個例句")],
-                "user_id": "test_user_1",
-                "thread_id": "thread_1"
+                "user_id": "test",
+                "thread_id": "3dc6d9cd-95ef-44fc-aa30-935f6592c648"
             }
         }
     ]
@@ -495,10 +503,6 @@ if __name__ == "__main__":
     for test in test_cases:
         print(f"\n=== Test Case: {test['name']} ===")
         response = process_vocab_query(test["query"])
+        db.add_chat_message('3dc6d9cd-95ef-44fc-aa30-935f6592c648', "assistant", response)
         print("\nResponse:", response)
         
-        # 顯示對話歷史
-        print("\nConversation History:")
-        history = get_conversation_history('thread_1')
-        for msg in history:
-            print(f"- {msg.type}: {msg.content[:100]}...")
